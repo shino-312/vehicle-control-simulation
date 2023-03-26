@@ -27,6 +27,16 @@ def generate_arc(radius, angle):
         ret.append(copy.deepcopy(temp))
     return ret
 
+def generate_left_turn_clothoid(radius):
+    return generate_clothoid(radius)
+
+def generate_right_turn_clothoid(radius):
+    ret = generate_clothoid(radius)
+    for p in ret:
+        p.y = -p.y
+        p.angle = -p.angle
+    return ret
+
 def generate_clothoid(radius):
     t = np.arange(0, 5, 0.01)
     func_x = np.cos(t**2 / 2)
@@ -44,6 +54,13 @@ def generate_clothoid(radius):
             temp.angle = c / (2.*radius)
             temp.curvature = c
             ret.append(copy.deepcopy(temp))
+    return ret
+
+def invert_path(path):
+    # Assume path is a list of PathPoint
+    ret = list(reversed(path))
+    for p in ret:
+        p.angle += np.pi
     return ret
 
 def join_path(path_array):
@@ -78,19 +95,27 @@ def join_path(path_array):
             ret.append(copy.deepcopy(temp))
     return ret
 
-def extract_x_y(path_array):
+def extract_path_element(path_array):
     x = []
     y = []
+    curvature = []
     for p in path_array:
         x.append(p.x)
         y.append(p.y)
-    return x, y
+        curvature.append(p.curvature)
+    return x, y, curvature
 
-clothoid= generate_clothoid(0.3)
-arc = generate_arc(0.3, np.pi*2)
+def make_color_map(lst):
+    max_value = max(lst)
+    return [[element/max_value, 0, 0] for element in lst]
 
-joined_curve = join_path([clothoid, arc])
+R = 0.8
+clothoid_1= generate_left_turn_clothoid(R)
+arc = generate_arc(R, np.pi/2)
+clothoid_2= invert_path(generate_right_turn_clothoid(R))
+joined_curve = join_path([clothoid_1, arc, clothoid_2])
 
-plot_x, plot_y = extract_x_y(joined_curve)
-plt.plot(plot_x, plot_y)
+plot_x, plot_y, plot_c = extract_path_element(joined_curve)
+plt.scatter(plot_x, plot_y, color=make_color_map(plot_c))
+plt.axis('square')
 plt.show()
